@@ -95,6 +95,9 @@ def imageToCv2():
     img_cv = img_cv[:, :, ::-1].copy()
     return img_cv
 
+def cv2ToImage():
+    pass
+
 # function for manipulate image
 def toGrey():
     global mode_status
@@ -298,6 +301,80 @@ def klise():
     imgfile = ImageTk.PhotoImage(image=imarray)
     showResult(imgfile)
 
+def lowPassFilter():
+    print('[INFO] Processing low pass filter')
+    cvimg = imageToCv2()
+
+    #prepare the 5x5 shaped filter
+    kernel = np.array([[1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1]])
+    kernel = kernel/sum(kernel)
+
+    #filter the source image
+    cvimg = cv2.filter2D(cvimg,-1,kernel)
+
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
+
+def highPassFilter():
+    print('[INFO] Processing high pass filter')
+    cvimg = imageToCv2()
+
+    #edge detection filter
+    # kernel = np.array([[0.0, -1.0, 0.0], 
+    #                 [-1.0, 4.0, -1.0],
+    #                 [0.0, -1.0, 0.0]])
+
+    kernel = np.array([[0.0, -1.0, 0.0], 
+                    [-1.0, 5.0, -1.0],
+                    [0.0, -1.0, 0.0]])
+
+    kernel = kernel/(np.sum(kernel) if np.sum(kernel)!=0 else 1)
+
+    #filter the source image
+    cvimg = cv2.filter2D(cvimg,-1,kernel)
+
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
+
+def bandPassFilter():
+    print('[INFO] Processing band pass filter')
+    cvimg = imageToCv2()
+
+    # Apply high pass filter
+    kernel = np.array([[0.0, -1.0, 0.0], 
+                    [-1.0, 5.0, -1.0],
+                    [0.0, -1.0, 0.0]])
+
+    kernel = kernel/(np.sum(kernel) if np.sum(kernel)!=0 else 1)
+    cvimg = cv2.filter2D(cvimg,-1,kernel)
+
+    # Apply low pass filter
+    kernel = np.array([[1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1], 
+                    [1, 1, 1, 1, 1]])
+    kernel = kernel/sum(kernel)
+    cvimg = cv2.filter2D(cvimg,-1,kernel)
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
+
 # show histogram of the image
 def showHistogram():
     print('[INFO] Processing histogram')
@@ -371,6 +448,9 @@ editmenu.add_command(label='Sampling', command=samplingImage)
 editmenu.add_command(label='Increase Intensity', command=incIntensity)
 editmenu.add_command(label='Decrease Intensity', command=decIntensity)
 editmenu.add_command(label='Klise', command=klise)
+editmenu.add_command(label='Low Pass Filter', command=lowPassFilter)
+editmenu.add_command(label='High Pass Filter', command=highPassFilter)
+editmenu.add_command(label='Band Pass Filter', command=bandPassFilter)
 editmenu.add_separator()
 editmenu.add_command(label='Histogram', command=showHistogram)
 editmenu.add_command(label='Histogram Equalization', command=showHisEqual)
