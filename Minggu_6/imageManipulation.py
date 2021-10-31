@@ -8,34 +8,27 @@
 # - Load histogram in canvas
 
 # import needed package
-from logging import disable
 import cv2, tkinter, os, numpy as np
 from PIL import ImageTk, Image
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from skimage import exposure
-
-# set global variable value
-canvas_size_x = 280
-canvas_size_y = 280
-window_size_x = 750
-window_size_y = 650
-filename = ''
-mode_status = ''
-selected_histogram = 'histogram'
 
 # set up window
 root = tkinter.Tk()
 root.title('Image Manipulation')
-root.geometry(str(window_size_x) + 'x' + str(window_size_y))
+root.geometry('650x450')
+
+# set global variable value
+filename = ''
+mode_status = ''
 
 # function to open image
 def openImg():
     global filename, img_original, canvas_original, menubar
-    filename_temp = filename
-    print('[INFO] Selecting files...')
+
+    print('[INFO] Selecting files..')
 
     filetypes = (
         ('JPG', '*.jpg'),
@@ -50,17 +43,13 @@ def openImg():
     )
 
     filename = tkinter.filedialog.askopenfilename(title='Open a file', filetypes=filetypes)
-    
+    print('[INFO] File path is ' + str(filename))
+    print('[INFO] Show the image to the canvas.')
+
     # read format files
     _, extension = os.path.splitext(filename)
 
-    if(filename == ''):
-        filename = filename_temp
-    
-    # double check for canceling open file case
     if(filename != ''):
-        print('[INFO] File path is ' + str(filename))
-        print('[INFO] Show the image to the canvas.')
         # check format files
         if(extension == '.svg'):
             img = svg2png()
@@ -78,66 +67,56 @@ def openImg():
         canvas_original.image = imgfile
         menubar.entryconfig('Edit', state='normal')
     else:
-        print('[INFO] Image not found.')
+        tkinter.messagebox.showerror(title='Error', message='Image not found!')
 
 def showResult(img):
-    global canvas_result, img_result, mode_text, mode_status, btn_hist_ori, btn_hist_equ, btn_hist_spe
-    print("[INFO] Show the result to the canvas.")
+    global canvas_result, img_result, mode_text, mode_status
 
     mode_text.set(mode_status)
     img_result = img
-    img_img = ImageTk.PhotoImage(image=img_result)
-    save_img = ImageTk.getimage(img_img)
-    save_img.save('temp_result.png')
+    img_img = ImageTk.getimage(img_result)
+    img_img.save('temp_result.png')
 
     # show image
-    canvas_result.create_image((canvas_result.winfo_height()/2, canvas_result.winfo_width()/2), anchor=tkinter.CENTER, image=img_img)
-    canvas_result.image = img_img
-
-    # auto update histogram
-    if(selected_histogram == 'histogram'): showHistogram()
-    if(selected_histogram == 'hisequ'): showHisEqual()
-    if(selected_histogram == 'hisspe'): showHisSpec()
+    canvas_result.create_image((canvas_result.winfo_height()/2, canvas_result.winfo_width()/2), anchor=tkinter.CENTER, image=img)
+    canvas_result.image = img
 
 def resetImg():
-    global filename, canvas_original, canvas_result, menubar, btn_hist_ori, btn_hist_equ, btn_hist_spe
+    global filename, canvas_original, canvas_result, menubar
     canvas_original.delete('all')
     canvas_result.delete('all')
     filename = ''
-    # disable edit menu & histogram button
     menubar.entryconfig('Edit', state='disable')
-    btn_hist_ori.config(state='disable')
-    btn_hist_equ.config(state='disable')
-    btn_hist_spe.config(state='disable')
 
-def imageToCv2(img):
-    img_cv = img
+def imageToCv2():
+    img_cv = img_original
     img_cv = img_cv.convert('RGB')
     img_cv = np.array(img_cv)
     img_cv = img_cv[:, :, ::-1].copy()
     return img_cv
 
-def cv2ToImage(cvimg):
-    b,g,r = cv2.split(cvimg)
-    imgmerge = cv2.merge((r,g,b))
-    imarray = Image.fromarray(imgmerge)
-    imarray.thumbnail((canvas_size_x, canvas_size_y), Image.ANTIALIAS)
-    # imgfile = ImageTk.PhotoImage(image=imarray)
-    return imarray
+def cv2ToImage():
+    pass
 
 # function for manipulate image
 def toGrey():
     global mode_status
 
-    print('[INFO] Processing image grayscale...')
+    print('[INFO] Processing image grayscale')
     mode_status = 'Gray Scale'
     
-    cvimg = imageToCv2(img_original)
+    cvimg = imageToCv2()
 
     # change image to grey
     cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2GRAY)
     cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
-    showResult(cv2ToImage(cvimg))
+
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
 
 def svg2png():
     drawing = svg2rlg(filename)
@@ -148,9 +127,9 @@ def svg2png():
 def colorQuantization():
     global canvas_result, mode_status
     
-    print('[INFO] Processing image quantization...')
+    print('[INFO] Processing image quantization')
     mode_status = 'Quantization'
-    image = imageToCv2(img_original)
+    image = imageToCv2()
 
     # create new windows
     newWindow = tkinter.Toplevel(root)
@@ -158,14 +137,14 @@ def colorQuantization():
     newWindow.geometry('200x30')
     entry1 = tkinter.Entry(newWindow)
     entry1.pack(side=tkinter.LEFT)
-    entry1.focus_force()
 
     def getInput():
         quant = int(entry1.get())
         newWindow.destroy()
         imarray = Image.fromarray(quantineImage(image, quant))
         imarray.thumbnail((250, 250), Image.ANTIALIAS)
-        showResult(imarray)
+        photo = ImageTk.PhotoImage(image = imarray)
+        showResult(photo)
 
     button1 = tkinter.Button(newWindow, text='Process', command=getInput)
     button1.pack(side=tkinter.RIGHT)       
@@ -182,9 +161,9 @@ def quantineImage(image, k):
 def samplingImage():
     global mode_status
     
-    print('[INFO] Processing image sampling...')
+    print('[INFO] Processing image sampling')
     mode_status = 'Sampling'
-    cvimg = cv2.cvtColor(imageToCv2(img_original), cv2.COLOR_BGR2RGB)
+    cvimg = cv2.cvtColor(imageToCv2(), cv2.COLOR_BGR2RGB)
     
     # create new windows
     newWindow = tkinter.Toplevel(root)
@@ -192,13 +171,16 @@ def samplingImage():
     newWindow.geometry('200x30')
     entry1 = tkinter.Entry(newWindow)
     entry1.pack(side=tkinter.LEFT)
-    entry1.focus_force()
 
     def getInput():
         input = int(entry1.get())
         newWindow.destroy()
         cvblur = cv2.blur(cvimg, (input, input)) # example blur in range 50
-        showResult(cv2ToImage(cvblur))
+        imarray = Image.fromarray(cvblur)
+        imarray.thumbnail((250, 250), Image.ANTIALIAS)
+        imnp = np.asarray(imarray)
+        photo = ImageTk.PhotoImage(image = Image.fromarray(imnp))
+        showResult(photo)
 
     button1 = tkinter.Button(newWindow, text='Process', command=getInput)
     button1.pack(side=tkinter.RIGHT)
@@ -206,9 +188,9 @@ def samplingImage():
 def incIntensity():
     global mode_status
     
-    print('[INFO] Increasing image intensity...')
+    print('[INFO] Increasing image intensity')
     mode_status = 'Increase Intensity'
-    cvimg = imageToCv2(img_original)
+    cvimg = imageToCv2()
     (rows,cols, _) = cvimg.shape
 
     def countRGB(value):
@@ -223,7 +205,13 @@ def incIntensity():
                 if(b > 255): b = 255
                 cvimg[i,j] = [r, g, b]
 
-        showResult(cv2ToImage(cvimg))
+        b,g,r = cv2.split(cvimg)
+        imgmerge = cv2.merge((r,g,b))
+        imarray = Image.fromarray(imgmerge)
+        # resize image with ratio
+        imarray.thumbnail((250, 250), Image.ANTIALIAS)
+        imgfile = ImageTk.PhotoImage(image=imarray)
+        showResult(imgfile)
 
     # create new windows
     newWindow = tkinter.Toplevel(root)
@@ -231,7 +219,6 @@ def incIntensity():
     newWindow.geometry('200x30')
     entry1 = tkinter.Entry(newWindow)
     entry1.pack(side=tkinter.LEFT)
-    entry1.focus_force()
 
     def getInput():
         input = int(entry1.get())
@@ -244,9 +231,9 @@ def incIntensity():
 def decIntensity():
     global mode_status
 
-    print('[INFO] Decreasing image intensity...')
+    print('[INFO] Decreasing image intensity')
     mode_status = 'Decrease Intensity'
-    cvimg = imageToCv2(img_original)
+    cvimg = imageToCv2()
     (rows,cols, _) = cvimg.shape
 
     def countRGB(value):
@@ -261,7 +248,12 @@ def decIntensity():
                 if(b < 0): b = 0
                 cvimg[i,j] = [r, g, b]
 
-        showResult(cv2ToImage(cvimg))
+        b,g,r = cv2.split(cvimg)
+        imgmerge = cv2.merge((r,g,b))
+        imarray = Image.fromarray(imgmerge)
+        imarray.thumbnail((250, 250), Image.ANTIALIAS)
+        imgfile = ImageTk.PhotoImage(image=imarray)
+        showResult(imgfile)
 
     # create new windows
     newWindow = tkinter.Toplevel(root)
@@ -269,7 +261,6 @@ def decIntensity():
     newWindow.geometry('200x30')
     entry1 = tkinter.Entry(newWindow)
     entry1.pack(side=tkinter.LEFT)
-    entry1.focus_force()
 
     def getInput():
         input = int(entry1.get())
@@ -282,9 +273,9 @@ def decIntensity():
 def klise():
     global mode_status
 
-    print('[INFO] Processing klise filter...')
+    print('[INFO] Processing klise filter')
     mode_status = 'Klise'
-    cvimg = imageToCv2(img_original)
+    cvimg = imageToCv2()
     (rows,cols, _) = cvimg.shape
 
     for i in range(rows):
@@ -301,14 +292,18 @@ def klise():
             if(b < 0): b = 0
             cvimg[i,j] = [r, g, b]
 
-    showResult(cv2ToImage(cvimg))
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+
+    # resize image with ratio
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
 
 def lowPassFilter():
-    global mode_status
-
-    print('[INFO] Processing low pass filter...')
-    mode_status = 'Low Pass'
-    cvimg = imageToCv2(img_original)
+    print('[INFO] Processing low pass filter')
+    cvimg = imageToCv2()
 
     #prepare the 5x5 shaped filter
     kernel = np.array([[1, 1, 1, 1, 1], 
@@ -320,13 +315,17 @@ def lowPassFilter():
 
     #filter the source image
     cvimg = cv2.filter2D(cvimg,-1,kernel)
-    showResult(cv2ToImage(cvimg))
+
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
 
 def highPassFilter():
-    global mode_status
-    print('[INFO] Processing high pass filter...')
-    cvimg = imageToCv2(img_original)
-    mode_status = 'High Pass'
+    print('[INFO] Processing high pass filter')
+    cvimg = imageToCv2()
 
     #edge detection filter
     # kernel = np.array([[0.0, -1.0, 0.0], 
@@ -341,13 +340,17 @@ def highPassFilter():
 
     #filter the source image
     cvimg = cv2.filter2D(cvimg,-1,kernel)
-    showResult(cv2ToImage(cvimg))
+
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
 
 def bandPassFilter():
-    global mode_status
-    print('[INFO] Processing band pass filter...')
-    cvimg = imageToCv2(img_original)
-    mode_status = 'Band Pass'
+    print('[INFO] Processing band pass filter')
+    cvimg = imageToCv2()
 
     # Apply high pass filter
     kernel = np.array([[0.0, -1.0, 0.0], 
@@ -365,65 +368,51 @@ def bandPassFilter():
                     [1, 1, 1, 1, 1]])
     kernel = kernel/sum(kernel)
     cvimg = cv2.filter2D(cvimg,-1,kernel)
-    showResult(cv2ToImage(cvimg))
+    b,g,r = cv2.split(cvimg)
+    imgmerge = cv2.merge((r,g,b))
+    imarray = Image.fromarray(imgmerge)
+    imarray.thumbnail((250, 250), Image.ANTIALIAS)
+    imgfile = ImageTk.PhotoImage(image=imarray)
+    showResult(imgfile)
 
-# show histogram of the result image
+# show histogram of the image
 def showHistogram():
-    global histogram_canvas, selected_histogram, btn_hist_ori, btn_hist_equ, btn_hist_spe
-
-    print('[INFO] Processing histogram...')
-    img = imageToCv2(img_result)
-
-    histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
-    ax_histogram = histogram_figure.add_subplot(111)
+    print('[INFO] Processing histogram')
+    img = cv2.imread('temp_result.png')
     color = ('b','g','r')
     for i,col in enumerate(color):
         histr = cv2.calcHist([img],[i],None,[256],[0,256])
-        ax_histogram.plot(histr, color=col)
-
-    histogram_canvas.get_tk_widget().destroy()
-    histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
-    histogram_canvas.draw()
-    histogram_canvas.get_tk_widget().pack(pady=10)
-    ax_histogram.set_title('Histogram')
-    selected_histogram='histogram'
-    btn_hist_ori.config(state='disable')
-    btn_hist_equ.config(state='normal')
-    btn_hist_spe.config(state='normal')
+        plt.plot(histr,color = col)
+        plt.xlim([0,256])
+    # canvas_result.pack_forget()
+    plt.show()
 
 def showHisEqual():
-    global histogram_canvas, selected_histogram, btn_hist_ori, btn_hist_equ, btn_hist_spe
-
-    print('[INFO] Processing equalization histogram...')
-    img_img = imageToCv2(img_result)
+    global img_result
+    
+    print('[INFO] Processing equalization histogram')
+    img_img = ImageTk.getimage(img_result).convert('RGB')
+    img_img = np.array(img_img)
+    img_img = img_img[:, :, ::-1].copy()
     img_img = cv2.cvtColor(img_img, cv2.COLOR_BGR2GRAY)
     equalized_img = cv2.equalizeHist(img_img)
     equalized_img = cv2.cvtColor(equalized_img, cv2.COLOR_BGR2RGB)
-
-    histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
-    ax_histogram = histogram_figure.add_subplot(111)
     color = ('b','g','r')
     for i,col in enumerate(color):
         histr = cv2.calcHist([equalized_img],[i],None,[256],[0,256])
-        ax_histogram.plot(histr,color = col)
-
-    histogram_canvas.get_tk_widget().destroy()
-    histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
-    histogram_canvas.draw()
-    histogram_canvas.get_tk_widget().pack(pady=10)
-    ax_histogram.set_title('Histogram Equalization')
-    selected_histogram='hisequ'
-    btn_hist_ori.config(state='normal')
-    btn_hist_equ.config(state='disable')
-    btn_hist_spe.config(state='normal')
-
+        plt.plot(histr,color = col)
+        plt.xlim([0,256])
+    # canvas_result.pack_forget()
+    plt.show()
 
 def showHisSpec():
-    global histogram_canvas, selected_histogram, btn_hist_ori, btn_hist_equ, btn_hist_spe
+    global img_result
 
-    print('[INFO] Processing specification histogram...')
-    src = imageToCv2(img_original)
-    ref = imageToCv2(img_result)
+    print('[INFO] Processing specification histogram')
+    src = imageToCv2()
+    ref = ImageTk.getimage(img_result).convert('RGB')
+    ref = np.array(ref)
+    ref = ref[:, :, ::-1].copy()
     ref = cv2.cvtColor(ref, cv2.COLOR_BGR2GRAY)
     ref = cv2.cvtColor(ref, cv2.COLOR_BGR2RGB)
 
@@ -432,22 +421,13 @@ def showHisSpec():
     multi = True if src.shape[-1] > 1 else False
     matched = exposure.match_histograms(src, ref, multichannel=multi)
     
-    histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
-    ax_histogram = histogram_figure.add_subplot(111)
     color = ('b','g','r')
     for i,col in enumerate(color):
         histr = cv2.calcHist([matched],[i],None,[256],[0,256])
-        ax_histogram.plot(histr,color = col)
-
-    histogram_canvas.get_tk_widget().destroy()
-    histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
-    histogram_canvas.draw()
-    histogram_canvas.get_tk_widget().pack(pady=10)
-    ax_histogram.set_title('Histogram Specification')
-    selected_histogram='hisspe'
-    btn_hist_ori.config(state='normal')
-    btn_hist_equ.config(state='normal')
-    btn_hist_spe.config(state='disable')
+        plt.plot(histr,color = col)
+        plt.xlim([0,256])
+    # canvas_result.pack_forget()
+    plt.show()
 
 # create menubar
 menubar = tkinter.Menu(root)
@@ -462,7 +442,6 @@ filemenu.add_command(label='Exit', command=root.quit)
 # create edit menu
 editmenu = tkinter.Menu(menubar, tearoff=0)
 editmenu.add_command(label='Reset', command=resetImg)
-editmenu.add_separator()
 editmenu.add_command(label='2Grey', command=toGrey)
 editmenu.add_command(label='Quantization', command=colorQuantization)
 editmenu.add_command(label='Sampling', command=samplingImage)
@@ -472,6 +451,10 @@ editmenu.add_command(label='Klise', command=klise)
 editmenu.add_command(label='Low Pass Filter', command=lowPassFilter)
 editmenu.add_command(label='High Pass Filter', command=highPassFilter)
 editmenu.add_command(label='Band Pass Filter', command=bandPassFilter)
+editmenu.add_separator()
+editmenu.add_command(label='Histogram', command=showHistogram)
+editmenu.add_command(label='Histogram Equalization', command=showHisEqual)
+editmenu.add_command(label='Histogram Specification', command=showHisSpec)
 
 # add cascade
 menubar.add_cascade(label='File', menu=filemenu)
@@ -481,46 +464,18 @@ menubar.entryconfig('Edit', state='disable')
 # add menubar to root
 root.config(menu=menubar)
 
-# create frame
-first_frame = tkinter.Frame(root, width=window_size_x, height=canvas_size_y+40)
-first_frame.pack(anchor=tkinter.NW)
-
-# create canvas for original image
-canvas_original = tkinter.Canvas(first_frame, width=canvas_size_x, height=canvas_size_y, background='white')
-canvas_original.pack(side=tkinter.LEFT, anchor=tkinter.NW, padx=25, pady=20)
-
 # add label to root
 mode_text = tkinter.StringVar()
 mode_text.set('Mode Status')
-label = tkinter.Label(first_frame, textvariable=mode_text, fg = 'black', font = 'Times').pack(side=tkinter.LEFT, anchor=tkinter.NW, pady=150)
+label = tkinter.Label(root, textvariable=mode_text, fg = 'black', font = 'Times').pack()
+
+# create canvas for original image
+canvas_original = tkinter.Canvas(root, width=250, height=250, background='white')
+canvas_original.pack(side=tkinter.LEFT)
 
 # create canvas for result image
-canvas_result = tkinter.Canvas(first_frame, width=canvas_size_x, height=canvas_size_y, background='white')
-canvas_result.pack(side=tkinter.LEFT, anchor=tkinter.NW, padx=25, pady=20)
-
-# create second frame
-second_frame = tkinter.Frame(root)
-second_frame.pack()
-
-# create histogram button
-btn_hist_ori = tkinter.Button(second_frame, text='Histogram', command=showHistogram, state='disable')
-btn_hist_ori.pack(side=tkinter.LEFT, padx=5)
-btn_hist_equ = tkinter.Button(second_frame, text='Histogram Equalization', command=showHisEqual, state='disable')
-btn_hist_equ.pack(side=tkinter.LEFT, padx=5)
-btn_hist_spe = tkinter.Button(second_frame, text='Histogram Specification', command=showHisSpec, state='disable')
-btn_hist_spe.pack(side=tkinter.LEFT, padx=5)
-
-third_frame = tkinter.Frame(root)
-third_frame.pack()
-
-# create histogram canvas
-histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
-ax_histogram = histogram_figure.add_subplot(111)
-histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
-histogram_canvas.draw()
-histogram_canvas.get_tk_widget().pack(pady=10)
-ax_histogram.set_visible(False)
-ax_histogram.set_title('Histogram')
+canvas_result = tkinter.Canvas(root, width=250, height=250, background='white')
+canvas_result.pack(side=tkinter.RIGHT)
 
 # make window stay
 root.mainloop()
