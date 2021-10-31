@@ -13,13 +13,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from skimage import exposure
 
 # set global variable value
+filename = ''
+mode_status = ''
+selected_histogram = 'histogram'
+
+# constant variable
 canvas_size_x = 280
 canvas_size_y = 280
 window_size_x = 750
 window_size_y = 650
-filename = ''
-mode_status = ''
-selected_histogram = 'histogram'
 
 # set up window
 root = tkinter.Tk()
