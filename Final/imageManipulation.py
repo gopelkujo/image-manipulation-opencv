@@ -314,7 +314,8 @@ def lowPassFilter():
                     [1, 1, 1, 1, 1], 
                     [1, 1, 1, 1, 1], 
                     [1, 1, 1, 1, 1]])
-    kernel = kernel/sum(kernel)
+    kernel = kernel/np.sum(kernel)
+    print('[INFO] Sum kernel is: ' + str(np.sum(kernel)))
 
     #filter the source image
     cvimg = cv2.filter2D(cvimg,-1,kernel)
@@ -327,15 +328,12 @@ def highPassFilter():
     mode_status = 'High Pass'
 
     #edge detection filter
-    # kernel = np.array([[0.0, -1.0, 0.0], 
-    #                 [-1.0, 4.0, -1.0],
-    #                 [0.0, -1.0, 0.0]])
-
     kernel = np.array([[0.0, -1.0, 0.0], 
-                    [-1.0, 5.0, -1.0],
+                    [-1.0, 4.0, -1.0],
                     [0.0, -1.0, 0.0]])
 
     kernel = kernel/(np.sum(kernel) if np.sum(kernel)!=0 else 1)
+    print('[INFO] Sum kernel is: ' + str(np.sum(kernel)))
 
     #filter the source image
     cvimg = cv2.filter2D(cvimg,-1,kernel)
@@ -348,11 +346,11 @@ def bandPassFilter():
     mode_status = 'Band Pass'
 
     kernel = np.array([[10.0, -1.0, -10.0], 
-                    [-1.0, 10.0, -1.0],
+                    [-1.0, 0, -1.0],
                     [-10.0, -1.0, 10.0]])
 
     kernel = kernel/(np.sum(kernel) if np.sum(kernel)!=0 else 1)
-    print(kernel)
+    print('[INFO] Sum kernel is: ' + str(np.sum(kernel)))
     cvimg = cv2.filter2D(cvimg,-1,kernel)
     showResult(cv2ToImage(cvimg))
 
