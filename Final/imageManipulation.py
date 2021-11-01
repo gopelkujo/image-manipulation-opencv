@@ -347,21 +347,12 @@ def bandPassFilter():
     cvimg = imageToCv2(img_original)
     mode_status = 'Band Pass'
 
-    # Apply high pass filter
-    kernel = np.array([[0.0, -1.0, 0.0], 
-                    [-1.0, 5.0, -1.0],
-                    [0.0, -1.0, 0.0]])
+    kernel = np.array([[10.0, -1.0, -10.0], 
+                    [-1.0, 10.0, -1.0],
+                    [-10.0, -1.0, 10.0]])
 
     kernel = kernel/(np.sum(kernel) if np.sum(kernel)!=0 else 1)
-    cvimg = cv2.filter2D(cvimg,-1,kernel)
-
-    # Apply low pass filter
-    kernel = np.array([[1, 1, 1, 1, 1], 
-                    [1, 1, 1, 1, 1], 
-                    [1, 1, 1, 1, 1], 
-                    [1, 1, 1, 1, 1], 
-                    [1, 1, 1, 1, 1]])
-    kernel = kernel/sum(kernel)
+    print(kernel)
     cvimg = cv2.filter2D(cvimg,-1,kernel)
     showResult(cv2ToImage(cvimg))
 
@@ -378,6 +369,10 @@ def showHistogram():
     for i,col in enumerate(color):
         histr = cv2.calcHist([img],[i],None,[256],[0,256])
         ax_histogram.plot(histr, color=col)
+
+    # for i in len(color):
+    #     histr = cv2.calcHist([img], [i], None, [256], [0,256])
+    #     ax_histogram.plot(histr, color=color[i])
 
     histogram_canvas.get_tk_widget().destroy()
     histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
