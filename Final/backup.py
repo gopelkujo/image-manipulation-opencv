@@ -20,10 +20,8 @@ selected_histogram = 'histogram'
 # constant variable
 canvas_size_x = 280
 canvas_size_y = 280
-window_size_x = 1050
-window_size_y = 600
-htg_size_x = 3.5
-htg_size_y = 2.2
+window_size_x = 750
+window_size_y = 650
 
 # set up window
 root = tkinter.Tk()
@@ -108,10 +106,7 @@ def resetImg():
     btn_hist_ori.config(state='disable')
     btn_hist_equ.config(state='disable')
     btn_hist_spe.config(state='disable')
-    for i in range(3):
-        htg_canvas[i].get_tk_widget().destroy()
-    
-    # histogram_canvas.get_tk_widget().forget()
+    histogram_canvas.get_tk_widget().forget()
 
 def imageToCv2(img):
     img_cv = img
@@ -362,25 +357,26 @@ def bandPassFilter():
 # show histogram of the result image
 def showHistogram():
     global histogram_canvas, selected_histogram, btn_hist_ori, btn_hist_equ, btn_hist_spe
-    # global htg_figure, ax_htg, htg_canvas
 
     print('[INFO] Processing histogram...')
     img = imageToCv2(img_result)
 
-    color = ('b', 'g', 'r')
-    for i in range(3):
-        htg_canvas[i].get_tk_widget().destroy()
-        htg_figure[i] =  plt.Figure(figsize=(htg_size_x, htg_size_y), dpi=100)
-        ax_htg[i] = htg_figure[i].add_subplot(111)
-        htg = cv2.calcHist([img], [i], None, [256], [0,256])
-        ax_htg[i].plot(htg, color=color[i])
-        htg_canvas[i] = FigureCanvasTkAgg(htg_figure[i], third_frame)
-        htg_canvas[i].draw()
-        htg_canvas[i].get_tk_widget().pack(side="left", pady=10)
-        if(i==0): ax_htg[i].set_title('B')
-        if(i==1): ax_htg[i].set_title('G')
-        if(i==2): ax_htg[i].set_title('R')
+    histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
+    ax_histogram = histogram_figure.add_subplot(111)
+    color = ('b','g','r')
+    for i,col in enumerate(color):
+        histr = cv2.calcHist([img],[i],None,[256],[0,256])
+        ax_histogram.plot(histr, color=col)
 
+    # for i in len(color):
+    #     histr = cv2.calcHist([img], [i], None, [256], [0,256])
+    #     ax_histogram.plot(histr, color=color[i])
+
+    histogram_canvas.get_tk_widget().destroy()
+    histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
+    histogram_canvas.draw()
+    histogram_canvas.get_tk_widget().pack(pady=10)
+    ax_histogram.set_title('Histogram')
     selected_histogram='histogram'
     btn_hist_ori.config(state='disable')
     btn_hist_equ.config(state='normal')
@@ -390,25 +386,23 @@ def showHisEqual():
     global histogram_canvas, selected_histogram, btn_hist_ori, btn_hist_equ, btn_hist_spe
 
     print('[INFO] Processing equalization histogram...')
-    img = imageToCv2(img_result)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img = cv2.equalizeHist(img)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img_img = imageToCv2(img_result)
+    img_img = cv2.cvtColor(img_img, cv2.COLOR_BGR2GRAY)
+    equalized_img = cv2.equalizeHist(img_img)
+    equalized_img = cv2.cvtColor(equalized_img, cv2.COLOR_BGR2RGB)
 
-    color = ('b', 'g', 'r')
-    for i in range(3):
-        htg_canvas[i].get_tk_widget().destroy()
-        htg_figure[i] =  plt.Figure(figsize=(htg_size_x, htg_size_y), dpi=100)
-        ax_htg[i] = htg_figure[i].add_subplot(111)
-        htg = cv2.calcHist([img], [i], None, [256], [0,256])
-        ax_htg[i].plot(htg, color=color[i])
-        htg_canvas[i] = FigureCanvasTkAgg(htg_figure[i], third_frame)
-        htg_canvas[i].draw()
-        htg_canvas[i].get_tk_widget().pack(side="left", pady=10)
-        if(i==0): ax_htg[i].set_title('B')
-        if(i==1): ax_htg[i].set_title('G')
-        if(i==2): ax_htg[i].set_title('R')
+    histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
+    ax_histogram = histogram_figure.add_subplot(111)
+    color = ('b','g','r')
+    for i,col in enumerate(color):
+        histr = cv2.calcHist([equalized_img],[i],None,[256],[0,256])
+        ax_histogram.plot(histr,color = col)
 
+    histogram_canvas.get_tk_widget().destroy()
+    histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
+    histogram_canvas.draw()
+    histogram_canvas.get_tk_widget().pack(pady=10)
+    ax_histogram.set_title('Histogram Equalization')
     selected_histogram='hisequ'
     btn_hist_ori.config(state='normal')
     btn_hist_equ.config(state='disable')
@@ -428,22 +422,19 @@ def showHisSpec():
     # and then perform histogram matching itself
     multi = True if src.shape[-1] > 1 else False
     matched = exposure.match_histograms(src, ref, multichannel=multi)
-
-    color = ('b', 'g', 'r')
-    for i in range(3):
-        htg_canvas[i].get_tk_widget().destroy()
-        htg_figure[i] =  plt.Figure(figsize=(htg_size_x, htg_size_y), dpi=100)
-        ax_htg[i] = htg_figure[i].add_subplot(111)
-        htg = cv2.calcHist([matched], [i], None, [256], [0,256])
-        ax_htg[i].plot(htg, color=color[i])
-        htg_canvas[i] = FigureCanvasTkAgg(htg_figure[i], third_frame)
-        htg_canvas[i].draw()
-        htg_canvas[i].get_tk_widget().pack(side="left", pady=10)
-        # ax_htg[i].set_visible(False)
-        if(i==0): ax_htg[i].set_title('B')
-        if(i==1): ax_htg[i].set_title('G')
-        if(i==2): ax_htg[i].set_title('R')
     
+    histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
+    ax_histogram = histogram_figure.add_subplot(111)
+    color = ('b','g','r')
+    for i,col in enumerate(color):
+        histr = cv2.calcHist([matched],[i],None,[256],[0,256])
+        ax_histogram.plot(histr,color = col)
+
+    histogram_canvas.get_tk_widget().destroy()
+    histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
+    histogram_canvas.draw()
+    histogram_canvas.get_tk_widget().pack(pady=10)
+    ax_histogram.set_title('Histogram Specification')
     selected_histogram='hisspe'
     btn_hist_ori.config(state='normal')
     btn_hist_equ.config(state='normal')
@@ -487,7 +478,7 @@ first_frame.pack(anchor=tkinter.NW)
 
 # create canvas for original image
 canvas_original = tkinter.Canvas(first_frame, width=canvas_size_x, height=canvas_size_y, background='white')
-canvas_original.pack(side=tkinter.LEFT, anchor=tkinter.NW, padx=100, pady=20)
+canvas_original.pack(side=tkinter.LEFT, anchor=tkinter.NW, padx=25, pady=20)
 
 # add label to root
 mode_text = tkinter.StringVar()
@@ -496,7 +487,7 @@ label = tkinter.Label(first_frame, textvariable=mode_text, fg = 'black', font = 
 
 # create canvas for result image
 canvas_result = tkinter.Canvas(first_frame, width=canvas_size_x, height=canvas_size_y, background='white')
-canvas_result.pack(side=tkinter.LEFT, anchor=tkinter.NW, padx=100, pady=20)
+canvas_result.pack(side=tkinter.LEFT, anchor=tkinter.NW, padx=25, pady=20)
 
 # create second frame
 second_frame = tkinter.Frame(root)
@@ -514,18 +505,13 @@ third_frame = tkinter.Frame(root)
 third_frame.pack()
 
 # create histogram canvas
-htg_figure = []
-ax_htg = []
-htg_canvas = []
-for i in range(3):
-    htg_figure.append(plt.Figure(figsize=(htg_size_x, htg_size_y), dpi=100))
-    ax_htg.append(htg_figure[i].add_subplot(111))
-    htg_canvas.append(FigureCanvasTkAgg(htg_figure[i], third_frame))
-    htg_canvas[i].draw()
-    htg_canvas[i].get_tk_widget().pack(side="left", pady=10)
-    if(i==0): ax_htg[i].set_title('R')
-    if(i==1): ax_htg[i].set_title('G')
-    if(i==2): ax_htg[i].set_title('B')
+histogram_figure = plt.Figure(figsize=(4.5, 2.5), dpi=100)
+ax_histogram = histogram_figure.add_subplot(111)
+histogram_canvas = FigureCanvasTkAgg(histogram_figure, third_frame)
+histogram_canvas.draw()
+histogram_canvas.get_tk_widget().pack(pady=10)
+ax_histogram.set_visible(False)
+ax_histogram.set_title('Histogram')
 
 # make window stay
 root.mainloop()
